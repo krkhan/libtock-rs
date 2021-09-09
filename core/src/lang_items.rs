@@ -18,7 +18,10 @@
 //! `rustc_main`. That's covered by the `_start` function in the root of this
 //! crate.
 
+use crate::console::Console;
 use crate::syscalls;
+use core::fmt::Write;
+use core::panic::PanicInfo;
 
 #[lang = "start"]
 #[allow(improper_ctypes_definitions)]
@@ -50,7 +53,23 @@ impl<S, T> Termination for Result<S, T> {
 #[cfg(not(feature = "custom_panic_handler"))]
 #[panic_handler]
 unsafe fn panic_handler(_info: &core::panic::PanicInfo) -> ! {
-    report_panic()
+    let _ = syscalls::command1_insecure(8, 1, 1);
+
+    {
+        let mut console = Console::new();
+        writeln!(console, "{}", _info).ok();
+        console.flush();
+        // Force the kernel to report the panic cause, by reading an invalid address.
+        // The memory protection unit should be setup by the Tock kernel to prevent apps from accessing
+        // address zero.
+        unsafe {
+            core::ptr::read_volatile(0 as *const usize);
+        }
+    }
+
+    loop {
+        syscalls::raw::yieldk();
+    }
 }
 
 unsafe fn report_panic() -> ! {

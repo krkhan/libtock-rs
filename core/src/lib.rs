@@ -14,6 +14,7 @@ extern "Rust" {
 }
 
 pub mod callback;
+pub mod console;
 pub mod debug;
 pub mod memop;
 pub mod result;
