@@ -30,14 +30,14 @@ static ALLOCATOR: TockAllocator = TockAllocator;
 
 #[cfg(not(feature = "custom_alloc_error_handler"))]
 #[alloc_error_handler]
-unsafe fn alloc_error_handler(_: Layout) -> ! {
+unsafe fn alloc_error_handler(layout: Layout) -> ! {
     use crate::syscalls;
 
     // Print 0x01 using the LowLevelDebug capsule (if available).
-    let _ = syscalls::command1_insecure(8, 2, 0x01);
+    let _ = syscalls::command1_insecure(8, 2, layout.align());
 
     // Signal a panic using the LowLevelDebug capsule (if available).
-    let _ = syscalls::command1_insecure(8, 1, 0x01);
+    let _ = syscalls::command1_insecure(8, 1, layout.size());
 
     loop {
         syscalls::raw::yieldk();
